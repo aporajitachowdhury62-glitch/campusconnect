@@ -5,7 +5,7 @@ import { useApp } from '../../context/AppContext';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
-  const { students, shopkeepers } = useApp();
+  const { students, shopkeepers, studentApplicationsCount, employerPendingCount } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
@@ -30,6 +30,7 @@ export const Navbar: React.FC = () => {
       accent: 'teal',
     },
   ];
+
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-paper-border">

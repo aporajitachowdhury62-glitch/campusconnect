@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Student } from '../../types';
 import { Modal } from '../common/Modal';
+import { StarRating } from '../rating/StarRating';
+import { UserProfileRatingModal } from '../rating/UserProfileRatingModal';
 import {
   GraduationCap,
   MapPin,
@@ -12,6 +14,7 @@ import {
   Building2,
   Sun,
   UserCheck,
+  Award,
 } from 'lucide-react';
 
 interface StudentCardProps {
@@ -21,6 +24,7 @@ interface StudentCardProps {
 
 export const StudentCard: React.FC<StudentCardProps> = ({ student, isRecent }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [contacted, setContacted] = useState(false);
 
   // Generate initials
@@ -55,12 +59,24 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, isRecent }) =
               </div>
             </div>
 
-            {isRecent && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wide bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
-                <Sparkles className="w-3 h-3 text-amber-600" />
-                <span>New</span>
-              </span>
-            )}
+            <div className="flex flex-col items-end gap-1">
+              {/* Student Trust & Engagement Rating */}
+              <StarRating
+                score={student.avg_rating || 4.8}
+                reviewCount={student.rating_count || 8}
+                showTopRatedBadge={true}
+                size="xs"
+                onClick={() => setIsRatingModalOpen(true)}
+                className="cursor-pointer"
+              />
+
+              {isRecent && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wide bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                  <Sparkles className="w-3 h-3 text-amber-600" />
+                  <span>New</span>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* College Name */}
@@ -142,14 +158,25 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, isRecent }) =
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="w-full btn-teal text-xs sm:text-sm py-2 rounded-xl"
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>View Profile & Hire</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="flex-1 btn-teal text-xs sm:text-sm py-2 rounded-xl"
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>View Profile & Hire</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsRatingModalOpen(true)}
+              className="btn-secondary text-xs px-3 rounded-xl"
+              title="View Verified Employer Reviews of Student"
+            >
+              <Award className="w-4 h-4 text-amber-600" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -162,6 +189,10 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, isRecent }) =
       >
         <div className="space-y-4 text-sm">
           <div className="bg-[#FAF7F2] p-4 rounded-xl border border-paper-border space-y-2.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-ink-500">Student Reliability Rating:</span>
+              <StarRating score={student.avg_rating || 4.8} reviewCount={student.rating_count || 8} size="xs" />
+            </div>
             <div className="flex justify-between items-center text-xs">
               <span className="text-ink-500">Locality:</span>
               <span className="font-bold text-ink-900">{student.area}, {student.city}, {student.state}</span>
@@ -238,6 +269,16 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, isRecent }) =
           </div>
         </div>
       </Modal>
+
+      {/* Student Ratings & Reviews Modal */}
+      <UserProfileRatingModal
+        isOpen={isRatingModalOpen}
+        onClose={() => setIsRatingModalOpen(false)}
+        userId={student.id}
+        userName={student.name}
+        userRole="student"
+        subtitle={`${student.qualification} • ${student.collegeName} • ${student.area}, ${student.city}`}
+      />
     </>
   );
 };

@@ -32,6 +32,12 @@ export type ShopCategory =
   | 'Salon'
   | 'Other';
 
+export * from './qaQc';
+export * from './connection';
+export * from './rating';
+
+import { QAStatus } from './qaQc';
+
 export interface Student {
   id: string;
   name: string;
@@ -51,6 +57,9 @@ export interface Student {
   totalHoursPerWeek: number; // Derived: daysAvailable.length * hoursPerDay
   phone?: string;
   createdAt: string;
+  avg_rating?: number;
+  rating_count?: number;
+  is_top_rated?: boolean;
 }
 
 export interface Shopkeeper {
@@ -71,7 +80,15 @@ export interface Shopkeeper {
   contactNumber: string;
   payEstimate?: string;
   createdAt: string;
+  qa_status?: QAStatus;
+  qa_verified_at?: string;
+  avg_rating?: number;
+  rating_count?: number;
+  is_top_rated?: boolean;
+  qc_score?: number;
+  qc_review_count?: number;
 }
+
 
 export type UserRole = 'student' | 'shopkeeper';
 
@@ -92,3 +109,4 @@ export interface ShopkeeperFilters {
   preferredWork: string;
   day: string;
 }
+
