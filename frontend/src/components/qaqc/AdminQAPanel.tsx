@@ -304,3 +304,5 @@ export const AdminQAPanel: React.FC<AdminQAPanelProps> = ({ onVendorQAUpdated })
     </div>
   );
 };
+
+export default AdminQAPanel;

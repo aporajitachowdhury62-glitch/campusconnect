@@ -1,8 +1,8 @@
 import React from 'react';
 import { QAStatus } from '../../types';
-import { ShieldCheck, Clock, AlertCircle, Shield, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Clock, AlertCircle, Shield } from 'lucide-react';
 
-interface VendorQABadgeProps {
+export interface VendorQABadgeProps {
   status?: QAStatus;
   size?: 'xs' | 'sm' | 'md';
   showLabel?: boolean;
@@ -88,3 +88,5 @@ export const VendorQABadge: React.FC<VendorQABadgeProps> = ({
     </span>
   );
 };
+
+export default VendorQABadge;

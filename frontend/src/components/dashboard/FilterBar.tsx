@@ -1,15 +1,13 @@
-import React from 'react';
 import {
   StudentFilters,
   ShopkeeperFilters,
-  UserRole,
 } from '../../types';
 import {
   SHOP_CATEGORY_OPTIONS,
   WORK_TYPE_OPTIONS,
   DAYS_OF_WEEK,
 } from '../../data/mockData';
-import { Search, RotateCcw, Filter, MapPin, Tag, Briefcase, Calendar } from 'lucide-react';
+import { Search, RotateCcw, MapPin, Calendar, Filter, Tag, Briefcase } from 'lucide-react';
 
 interface StudentFilterBarProps {
   role: 'student';
@@ -348,3 +346,5 @@ export const FilterBar: React.FC<FilterBarProps> = (props) => {
     </div>
   );
 };
+
+export default FilterBar;

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, Store, Compass, Menu, X, MapPin } from 'lucide-react';
+import { GraduationCap, Store, Compass, Menu, X, MapPin, ShieldCheck } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
-  const { students, shopkeepers, studentApplicationsCount, employerPendingCount } = useApp();
+  const { students, shopkeepers } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
@@ -29,8 +29,13 @@ export const Navbar: React.FC = () => {
       icon: Store,
       accent: 'teal',
     },
+    {
+      path: '/qaqc',
+      label: 'QA/QC Center',
+      icon: ShieldCheck,
+      badge: 'Audit & Safety',
+    },
   ];
-
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-paper-border">
@@ -81,6 +86,8 @@ export const Navbar: React.FC = () => {
                           ? 'text-marigold-600'
                           : link.path.includes('shopkeeper')
                           ? 'text-tealdeep-700'
+                          : link.path.includes('qaqc')
+                          ? 'text-indigo-600'
                           : 'text-marigold-600'
                         : 'text-ink-400'
                     }`}
@@ -151,3 +158,5 @@ export const Navbar: React.FC = () => {
     </header>
   );
 };
+
+export default Navbar;

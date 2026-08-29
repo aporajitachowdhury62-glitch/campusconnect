@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Engagement, UserRoleType, Rating } from '../../types';
 import { RatingModal } from './RatingModal';
-import { Sparkles, Star, Award, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Star, ChevronRight } from 'lucide-react';
 
-interface PendingRatingsBannerProps {
+export interface PendingRatingsBannerProps {
   pendingEngagements: Engagement[];
   currentUserId: string;
   currentUserRole: UserRoleType;
@@ -48,7 +48,7 @@ export const PendingRatingsBanner: React.FC<PendingRatingsBannerProps> = ({
         {/* List of pending items */}
         <div className="space-y-2 pt-1">
           {pendingEngagements.map((eng) => {
-            const isStudent = currentUserRole === 'student';
+            const isStudent = (currentUserRole || '').toLowerCase().includes('student');
             const otherParty = isStudent ? eng.shop_name : eng.student_name;
 
             return (
@@ -96,3 +96,5 @@ export const PendingRatingsBanner: React.FC<PendingRatingsBannerProps> = ({
     </>
   );
 };
+
+export default PendingRatingsBanner;

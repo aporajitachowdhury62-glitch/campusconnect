@@ -4,9 +4,8 @@ import { RatingSummary } from './RatingSummary';
 import { RatingsList } from './RatingsList';
 import { Rating, RatingSummaryData, UserRoleType } from '../../types';
 import { ratingService } from '../../services/ratingService';
-import { Star, ShieldCheck, Award } from 'lucide-react';
 
-interface UserProfileRatingModalProps {
+export interface UserProfileRatingModalProps {
   isOpen: boolean;
   onClose: () => void;
   userId: string;
@@ -49,12 +48,14 @@ export const UserProfileRatingModal: React.FC<UserProfileRatingModalProps> = ({
     }
   }, [isOpen, userId]);
 
+  const isStudent = (userRole || '').toLowerCase().includes('student');
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={userName}
-      subtitle={subtitle || `Verified Ratings & Reviews • ${userRole === 'student' ? 'Student Worker' : 'Local Employer'}`}
+      subtitle={subtitle || `Verified Ratings & Reviews • ${isStudent ? 'Student Worker' : 'Local Employer'}`}
     >
       <div className="space-y-5">
         {summary && (
@@ -75,3 +76,5 @@ export const UserProfileRatingModal: React.FC<UserProfileRatingModalProps> = ({
     </Modal>
   );
 };
+
+export default UserProfileRatingModal;

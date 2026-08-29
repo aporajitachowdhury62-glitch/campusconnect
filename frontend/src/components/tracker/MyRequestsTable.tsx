@@ -6,20 +6,18 @@ import {
   CheckCircle2,
   Phone,
   MessageSquare,
-  Building2,
   ExternalLink,
   ChevronRight,
+  Radio,
   Sparkles,
   Inbox,
-  Filter,
-  Radio,
 } from 'lucide-react';
-import { ConnectionRequest, ConnectionStatus } from '../../types';
+import { ConnectionRequest } from '../../types';
 import { RequestStatusBadge } from './RequestStatusBadge';
 import { connectionService } from '../../services/connectionService';
 import { Modal } from '../common/Modal';
 
-interface MyRequestsTableProps {
+export interface MyRequestsTableProps {
   studentId?: string;
   onExploreGigs?: () => void;
 }
@@ -49,9 +47,8 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
     }
   };
 
-  // Initial fetch
   useEffect(() => {
-    fetchRequests();
+    fetchRequests(false);
   }, [studentId]);
 
   // Real-time polling every 5 seconds
@@ -65,7 +62,7 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
     return () => clearInterval(interval);
   }, [studentId, isPollingActive]);
 
-  const filteredRequests = requests.filter((req) => {
+  const filteredRequests = requests.filter((req: ConnectionRequest) => {
     if (statusFilter !== 'all' && req.status !== statusFilter) {
       return false;
     }
@@ -154,22 +151,22 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
               {
                 id: 'sent',
                 label: 'Sent (Single Tick)',
-                count: requests.filter((r) => r.status === 'sent').length,
+                count: requests.filter((r: ConnectionRequest) => r.status === 'sent').length,
               },
               {
                 id: 'seen',
                 label: 'Seen (Double Tick)',
-                count: requests.filter((r) => r.status === 'seen').length,
+                count: requests.filter((r: ConnectionRequest) => r.status === 'seen').length,
               },
               {
                 id: 'accepted',
                 label: 'Accepted',
-                count: requests.filter((r) => r.status === 'accepted').length,
+                count: requests.filter((r: ConnectionRequest) => r.status === 'accepted').length,
               },
               {
                 id: 'rejected',
                 label: 'Declined',
-                count: requests.filter((r) => r.status === 'rejected').length,
+                count: requests.filter((r: ConnectionRequest) => r.status === 'rejected').length,
               },
             ].map((tab) => {
               const active = statusFilter === tab.id;
@@ -186,8 +183,8 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                      active ? 'bg-white/20 text-white' : 'bg-paper-200 text-ink-700'
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      active ? 'bg-white/20 text-white' : 'bg-paper-300/80 text-ink-700'
                     }`}
                   >
                     {tab.count}
@@ -197,9 +194,9 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
             })}
           </div>
 
-          {/* Search Input */}
+          {/* Search Box */}
           <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 text-ink-400 absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
@@ -261,40 +258,41 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-paper-border">
-                {filteredRequests.map((req) => (
+                {filteredRequests.map((req: ConnectionRequest) => (
                   <tr
                     key={req.id}
-                    className="hover:bg-amber-50/40 transition-colors group cursor-pointer"
                     onClick={() => setSelectedRequest(req)}
+                    className="hover:bg-paper-50 cursor-pointer transition-colors group"
                   >
-                    <td className="py-4 px-4">
-                      <div>
-                        <span className="font-heading font-bold text-sm text-ink-900 block group-hover:text-marigold-700">
-                          {req.shop_name}
-                        </span>
-                        <span className="text-[11px] text-ink-500">
-                          Contact: {req.employer_name}
-                        </span>
+                    <td className="py-3.5 px-4">
+                      <div className="font-heading font-bold text-sm text-ink-900 group-hover:text-marigold-700 transition-colors">
+                        {req.shop_name}
+                      </div>
+                      <div className="text-[11px] text-ink-500">
+                        Owner: {req.employer_name}
                       </div>
                     </td>
 
-                    <td className="py-4 px-4">
-                      <span className="font-semibold text-ink-800 bg-paper-100 px-2 py-0.5 rounded border border-paper-border">
+                    <td className="py-3.5 px-4">
+                      <span className="font-semibold text-ink-900 block">
                         {req.job_title}
+                      </span>
+                      <span className="text-[11px] text-ink-400 italic line-clamp-1">
+                        "{req.message}"
                       </span>
                     </td>
 
-                    <td className="py-4 px-4">
+                    <td className="py-3.5 px-4">
                       <RequestStatusBadge status={req.status} size="sm" />
                     </td>
 
-                    <td className="py-4 px-4 text-ink-600 font-medium">
+                    <td className="py-3.5 px-4 text-ink-600">
                       {formatDate(req.sent_at)}
                     </td>
 
-                    <td className="py-4 px-4 text-ink-600">
+                    <td className="py-3.5 px-4 text-ink-600">
                       {req.responded_at ? (
-                        <span className="text-emerald-700 font-semibold">
+                        <span className="text-emerald-700 font-medium">
                           Responded {formatDate(req.responded_at)}
                         </span>
                       ) : req.seen_at ? (
@@ -302,21 +300,21 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
                           Seen {formatDate(req.seen_at)}
                         </span>
                       ) : (
-                        <span className="text-ink-400">Awaiting shopkeeper</span>
+                        <span className="text-ink-400">Awaiting shopkeeper open</span>
                       )}
                     </td>
 
-                    <td className="py-4 px-4 text-right">
+                    <td className="py-3.5 px-4 text-right">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedRequest(req);
                         }}
-                        className="btn-secondary text-xs py-1.5 px-3 rounded-lg font-semibold inline-flex items-center gap-1 group-hover:bg-marigold-100 group-hover:text-marigold-900 group-hover:border-marigold-300"
+                        className="p-1.5 rounded-lg border border-paper-border hover:bg-paper-200 text-ink-600 transition-colors"
+                        title="View Application Details"
                       >
-                        <span>View Details</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
@@ -325,29 +323,36 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
             </table>
           </div>
 
-          {/* Mobile Card List View */}
+          {/* Mobile Card Feed View */}
           <div className="md:hidden divide-y divide-paper-border">
-            {filteredRequests.map((req) => (
+            {filteredRequests.map((req: ConnectionRequest) => (
               <div
                 key={req.id}
                 onClick={() => setSelectedRequest(req)}
-                className="p-4 space-y-3 hover:bg-paper-50 active:bg-paper-100"
+                className="p-4 space-y-2.5 active:bg-paper-50 cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h4 className="font-heading font-bold text-base text-ink-900">
+                    <h4 className="font-heading font-bold text-sm text-ink-900">
                       {req.shop_name}
                     </h4>
-                    <p className="text-xs text-ink-500">
-                      Contact: {req.employer_name} • {req.job_title}
+                    <p className="text-xs text-ink-500 font-medium">
+                      {req.job_title}
                     </p>
                   </div>
-                  <RequestStatusBadge status={req.status} size="sm" />
+                  <RequestStatusBadge status={req.status} size="xs" />
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-ink-500 pt-1 border-t border-paper-border">
-                  <span>Sent: {formatDate(req.sent_at)}</span>
-                  <span className="font-semibold text-marigold-700">View message & notes →</span>
+                <p className="text-xs text-ink-600 bg-paper-50 p-2.5 rounded-xl border border-paper-border italic line-clamp-2">
+                  "{req.message}"
+                </p>
+
+                <div className="flex items-center justify-between text-[11px] text-ink-400 pt-1">
+                  <span>Sent {formatDate(req.sent_at)}</span>
+                  <span className="flex items-center gap-1 font-semibold text-marigold-800">
+                    <span>Inspect</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </span>
                 </div>
               </div>
             ))}
@@ -355,58 +360,72 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
         </div>
       )}
 
-      {/* Request Detail Modal */}
+      {/* Detail Modal */}
       {selectedRequest && (
         <Modal
           isOpen={Boolean(selectedRequest)}
           onClose={() => setSelectedRequest(null)}
           title={selectedRequest.shop_name}
-          subtitle={`Application Status Details • ${selectedRequest.job_title}`}
+          subtitle={`Position: ${selectedRequest.job_title} • Owner: ${selectedRequest.employer_name}`}
         >
-          <div className="space-y-4 text-xs sm:text-sm">
+          <div className="space-y-4 text-xs">
             {/* Status Highlight Banner */}
-            <div className="p-4 bg-paper-100 rounded-xl border border-paper-border flex items-center justify-between">
-              <div>
-                <span className="text-ink-500 text-xs block mb-1">Current Delivery Status:</span>
-                <RequestStatusBadge status={selectedRequest.status} size="md" />
-              </div>
-              <div className="text-right text-xs text-ink-500">
-                <span>Sent on: {formatDate(selectedRequest.sent_at)}</span>
-                {selectedRequest.seen_at && (
-                  <span className="block text-sky-700 font-medium">
-                    Seen on: {formatDate(selectedRequest.seen_at)}
+            <div className="p-3.5 rounded-xl bg-paper-100 border border-paper-border flex items-center justify-between">
+              <span className="font-semibold text-ink-700">Application State:</span>
+              <RequestStatusBadge status={selectedRequest.status} size="md" />
+            </div>
+
+            {/* Timeline info */}
+            <div className="space-y-2 p-3 bg-white rounded-xl border border-paper-border">
+              <span className="font-bold text-[11px] uppercase tracking-wider text-ink-400 block">
+                Lifecycle Timeline
+              </span>
+              <div className="space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-ink-500">1. Dispatched:</span>
+                  <span className="font-medium text-ink-800">
+                    {formatDate(selectedRequest.sent_at)}
                   </span>
-                )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-ink-500">2. Viewed by Employer:</span>
+                  <span className="font-medium text-ink-800">
+                    {selectedRequest.seen_at ? formatDate(selectedRequest.seen_at) : 'Not opened yet'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-ink-500">3. Final Decision:</span>
+                  <span className="font-medium text-ink-800">
+                    {selectedRequest.responded_at ? formatDate(selectedRequest.responded_at) : 'Pending response'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Application Message Sent by Student */}
-            <div>
-              <h5 className="font-semibold text-ink-900 mb-1 flex items-center gap-1.5">
-                <MessageSquare className="w-4 h-4 text-marigold-600" />
-                <span>Your Application Message:</span>
-              </h5>
-              <div className="p-3 bg-white rounded-xl border border-paper-border text-ink-800 leading-relaxed italic text-xs sm:text-sm">
+            {/* Message Sent */}
+            <div className="space-y-1">
+              <label className="font-bold text-[11px] uppercase tracking-wider text-ink-500">
+                Your Intro Message:
+              </label>
+              <div className="p-3 rounded-xl bg-paper-50 border border-paper-border text-ink-800 italic leading-relaxed">
                 "{selectedRequest.message}"
               </div>
             </div>
 
-            {/* Employer Response / Note if any */}
+            {/* Employer Note if exists */}
             {selectedRequest.employer_note && (
-              <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 space-y-1">
-                <h5 className="font-bold text-emerald-900 flex items-center gap-1.5 text-xs">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                  <span>Note from Employer ({selectedRequest.employer_name}):</span>
-                </h5>
-                <p className="text-xs text-emerald-800 leading-relaxed font-medium">
-                  {selectedRequest.employer_note}
+              <div className="space-y-1 p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                <label className="font-bold text-[11px] uppercase tracking-wider text-emerald-900 block">
+                  Employer Response Note:
+                </label>
+                <p className="text-emerald-950 font-medium">
+                  "{selectedRequest.employer_note}"
                 </p>
               </div>
             )}
 
-            {/* Next Steps according to status */}
-            <div className="p-3 bg-paper-50 rounded-xl border border-paper-border space-y-1.5">
-              <span className="font-semibold text-ink-900 block text-xs">Status Guide:</span>
+            {/* Status description explanation */}
+            <div className="p-3 rounded-xl bg-paper-50 border border-paper-border">
               {selectedRequest.status === 'sent' && (
                 <p className="text-xs text-ink-600">
                   ✓ <strong>Single Tick:</strong> Your message has been delivered to the shopkeeper's inbox. When they open it, it will transition to Seen (Double Tick).
@@ -434,3 +453,5 @@ export const MyRequestsTable: React.FC<MyRequestsTableProps> = ({
     </div>
   );
 };
+
+export default MyRequestsTable;

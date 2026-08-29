@@ -1,4 +1,4 @@
-import { ConnectionRequest, ConnectionStatus } from '../types';
+import { ConnectionRequest } from '../types';
 import { INITIAL_CONNECTION_REQUESTS } from '../data/mockData';
 
 const STORAGE_KEY_REQUESTS = 'campusconnect_connection_requests_v1';
@@ -56,7 +56,7 @@ export const connectionService = {
 
     const newRequest: ConnectionRequest = {
       ...data,
-      id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `req-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       status: 'sent',
       sent_at: new Date().toISOString(),
     };
@@ -78,7 +78,7 @@ export const connectionService = {
       if (req.id === requestId && req.status === 'sent') {
         updatedItem = {
           ...req,
-          status: 'seen',
+          status: 'seen' as const,
           seen_at: new Date().toISOString(),
         };
         return updatedItem;
@@ -97,24 +97,31 @@ export const connectionService = {
   },
 
   /**
+   * Alias for markRequestSeen
+   */
+  async markAsSeen(requestId: string): Promise<ConnectionRequest> {
+    return this.markRequestSeen(requestId);
+  },
+
+  /**
    * Employer responds: Accept or Reject
    */
   async respondToRequest(
     requestId: string,
-    status: 'accepted' | 'rejected',
+    status: 'accepted' | 'rejected' | 'accept' | 'reject',
     employerNote?: string
   ): Promise<ConnectionRequest> {
     await new Promise((resolve) => setTimeout(resolve, 200));
     const all = getStoredRequests();
     let updatedItem: ConnectionRequest | null = null;
+    const normalizedStatus = status === 'accept' ? 'accepted' : status === 'reject' ? 'rejected' : status;
 
     const updated = all.map((req) => {
       if (req.id === requestId) {
         updatedItem = {
           ...req,
-          status,
+          status: normalizedStatus,
           responded_at: new Date().toISOString(),
-          seen_at: req.seen_at || new Date().toISOString(),
           employer_note: employerNote || req.employer_note,
         };
         return updatedItem;
@@ -137,3 +144,5 @@ export const connectionService = {
     return getStoredRequests();
   },
 };
+
+export default connectionService;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 
-interface MultiSelectPillsProps<T extends string> {
+export interface MultiSelectPillsProps<T extends string> {
   options: readonly T[] | T[];
   selected: T[];
   onChange: (selected: T[]) => void;
@@ -79,3 +79,5 @@ export const MultiSelectPills = <T extends string>({
     </div>
   );
 };
+
+export default MultiSelectPills;

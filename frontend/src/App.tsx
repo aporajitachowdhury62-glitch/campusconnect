@@ -5,6 +5,7 @@ import { Navbar } from './components/common/Navbar';
 import { StudentSignupPage } from './pages/StudentSignupPage';
 import { ShopkeeperSignupPage } from './pages/ShopkeeperSignupPage';
 import { DashboardPage } from './pages/DashboardPage';
+import QAQCDashboard from './components/qaqc/QAQCDashboard';
 
 export const App: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ export const App: React.FC = () => {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/student-signup" element={<StudentSignupPage />} />
               <Route path="/shopkeeper-signup" element={<ShopkeeperSignupPage />} />
+              <Route path="/qaqc" element={<QAQCDashboard />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>

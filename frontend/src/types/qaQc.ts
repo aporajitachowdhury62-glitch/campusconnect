@@ -50,3 +50,31 @@ export interface VendorQAQC {
     resolved: boolean;
   }[];
 }
+
+export type QAQCRole =
+  | 'Lead Inspector'
+  | 'Food Safety Officer'
+  | 'Hygiene Auditor'
+  | 'Community Moderator'
+  | 'Admin'
+  | 'QAC'
+  | 'qac';
+
+export interface QAQCTask {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  category: string;
+  taskType: 'document_verification' | 'hygiene_audit' | 'flag_investigation' | 'spot_check';
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+  assignedTo?: string;
+  assignedRole?: QAQCRole;
+  dueDate?: string;
+  createdAt: string;
+  completedAt?: string;
+  score?: number;
+  notes?: string;
+}

@@ -10,3 +10,5 @@ export const StudentSignupPage: React.FC = () => {
     </main>
   );
 };
+
+export default StudentSignupPage;

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -82,3 +82,5 @@ export const Modal: React.FC<ModalProps> = ({
     </div>
   );
 };
+
+export default Modal;

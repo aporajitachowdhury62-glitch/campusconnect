@@ -131,3 +131,5 @@ export const TagInput: React.FC<TagInputProps> = ({
     </div>
   );
 };
+
+export default TagInput;

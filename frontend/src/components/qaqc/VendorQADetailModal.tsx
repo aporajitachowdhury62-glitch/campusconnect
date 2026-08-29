@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
-  Star,
   CheckCircle2,
-  AlertCircle,
   FileText,
   Clock,
-  Building2,
-  Phone,
-  Sparkles,
   Plus,
-  X,
-  ExternalLink,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { VendorQAQC, Review, QAStatus } from '../../types';
@@ -21,13 +14,14 @@ import { ReviewList } from './ReviewList';
 import { ReviewForm } from './ReviewForm';
 import { vendorService } from '../../services/vendorService';
 
-interface VendorQADetailModalProps {
+export interface VendorQADetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   vendorId: string;
   vendorName: string;
   category: string;
-  location: string;
+  location?: string;
+  initialStatus?: QAStatus;
   onQAUpdated?: (updatedQA: VendorQAQC) => void;
 }
 
@@ -56,7 +50,7 @@ export const VendorQADetailModal: React.FC<VendorQADetailModalProps> = ({
       setQaData(qa);
       setReviews(revs);
     } catch (e) {
-      console.error('Failed loading QA/QC data', e);
+      console.error('Failed loading vendor QA detail', e);
     } finally {
       setIsLoading(false);
     }
@@ -65,40 +59,31 @@ export const VendorQADetailModal: React.FC<VendorQADetailModalProps> = ({
   useEffect(() => {
     if (isOpen && vendorId) {
       loadData();
-      setShowReviewForm(false);
     }
   }, [isOpen, vendorId]);
 
   const handleReviewSubmitted = async (
-    reviewData: Omit<Review, 'id' | 'created_at' | 'flagged'>
+    newReview: Omit<Review, 'id' | 'created_at' | 'flagged'>
   ) => {
-    const { review, updatedQA } = await vendorService.submitReview(reviewData);
-    setReviews((prev) => [review, ...prev]);
-    setQaData(updatedQA);
-    setShowReviewForm(false);
-    if (onQAUpdated) {
-      onQAUpdated(updatedQA);
+    try {
+      const created = await vendorService.addReview(newReview);
+      setReviews((prev) => [created, ...prev]);
+      setShowReviewForm(false);
+      const updatedQA = await vendorService.fetchVendorQA(vendorId);
+      setQaData(updatedQA);
+      if (onQAUpdated && updatedQA) onQAUpdated(updatedQA);
+    } catch (e) {
+      console.error('Failed adding review', e);
     }
   };
 
   const handleReportIssue = async (reason: string) => {
-    const updated = await vendorService.reportIssue(vendorId, reason);
-    setQaData(updated);
-    if (onQAUpdated) {
-      onQAUpdated(updated);
-    }
-  };
-
-  const formatDate = (isoString?: string) => {
-    if (!isoString) return 'Not yet reviewed';
     try {
-      return new Date(isoString).toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
-    } catch {
-      return isoString;
+      const updated = await vendorService.flagReview(vendorId, reason);
+      setQaData(updated);
+      if (onQAUpdated) onQAUpdated(updated);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -107,160 +92,178 @@ export const VendorQADetailModal: React.FC<VendorQADetailModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={vendorName}
-      subtitle={`Food Vendor QA/QC Verification Hub • ${location}`}
+      subtitle={`${category} • ${location || 'Campus Neighborhood'} • Quality & Hygiene Audit`}
     >
-      <div className="space-y-4">
-        {/* Header Summary Banner */}
-        <div className="p-4 bg-gradient-to-r from-paper-100 to-amber-50/50 rounded-2xl border border-paper-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <VendorQABadge status={qaData?.qa_status || 'unverified'} size="md" />
-              <VendorQCRating
-                score={qaData?.qc_score || 0}
-                reviewCount={qaData?.qc_review_count || reviews.length}
-                size="md"
-              />
+      <div className="space-y-5">
+        {/* Top Summary Banner */}
+        <div className="p-4 rounded-2xl bg-paper-100 border border-paper-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-tealdeep-50 text-tealdeep-800 border border-tealdeep-200">
+              <ShieldCheck className="w-6 h-6" />
             </div>
-            <p className="text-xs text-ink-500 flex items-center gap-1 mt-1">
-              <Clock className="w-3 h-3 text-ink-400" />
-              <span>Last QA Audit: <strong>{formatDate(qaData?.qa_verified_at)}</strong></span>
-              {qaData?.qa_reviewed_by && (
-                <span className="text-ink-400">({qaData.qa_reviewed_by})</span>
-              )}
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-heading font-bold text-sm text-ink-900">
+                  {vendorName}
+                </h4>
+                <VendorQABadge status={qaData?.qa_status || 'pending'} size="xs" />
+              </div>
+              <p className="text-[11px] text-ink-500">
+                Verified compliance with CampusConnect hyperlocal quality and hygiene standards.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-stretch sm:self-auto">
-            {activeTab === 'qc' && !showReviewForm && (
-              <button
-                type="button"
-                onClick={() => setShowReviewForm(true)}
-                className="btn-primary text-xs py-2 px-3.5 rounded-xl w-full sm:w-auto flex items-center justify-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Leave a Review</span>
-              </button>
-            )}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <VendorQCRating
+              score={qaData?.qc_score || 0}
+              reviewCount={qaData?.qc_review_count || 0}
+              size="md"
+            />
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-paper-border">
+        {/* Tab Toggle */}
+        <div className="flex items-center gap-2 border-b border-paper-border pb-1">
           <button
             type="button"
-            onClick={() => setActiveTab('qa')}
-            className={`flex-1 py-2.5 px-4 text-xs sm:text-sm font-heading font-bold border-b-2 transition-all flex items-center justify-center gap-2 ${
+            onClick={() => {
+              setActiveTab('qa');
+              setShowReviewForm(false);
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'qa'
-                ? 'border-marigold-600 text-marigold-900 bg-marigold-50/40'
-                : 'border-transparent text-ink-500 hover:text-ink-800'
+                ? 'bg-ink-900 text-white shadow-2xs'
+                : 'bg-paper-50 text-ink-600 hover:bg-paper-200'
             }`}
           >
-            <ShieldCheck className="w-4 h-4 text-tealdeep-700" />
-            <span>Process QA Checklist (Safety & Licenses)</span>
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>FSSAI & Document Audits ({qaData?.qa_documents?.length || 0})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('qc')}
-            className={`flex-1 py-2.5 px-4 text-xs sm:text-sm font-heading font-bold border-b-2 transition-all flex items-center justify-center gap-2 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'qc'
-                ? 'border-marigold-600 text-marigold-900 bg-marigold-50/40'
-                : 'border-transparent text-ink-500 hover:text-ink-800'
+                ? 'bg-ink-900 text-white shadow-2xs'
+                : 'bg-paper-50 text-ink-600 hover:bg-paper-200'
             }`}
           >
-            <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-            <span>Quality Control (QC Reviews & Ratings)</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-paper-200 text-[10px] text-ink-700">
-              {reviews.length}
-            </span>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Student QC Reviews ({reviews.length})</span>
           </button>
+
+          {activeTab === 'qc' && !showReviewForm && (
+            <button
+              type="button"
+              onClick={() => setShowReviewForm(true)}
+              className="ml-auto btn-primary text-xs py-1 px-3 rounded-lg flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Write Review</span>
+            </button>
+          )}
         </div>
 
-        {/* Tab 1: QA Checklist */}
+        {/* Tab 1: QA Checklist & Compliance */}
         {activeTab === 'qa' && (
-          <div className="space-y-3.5">
-            <div className="text-xs text-ink-600 bg-paper-50 p-3 rounded-xl border border-paper-border flex items-start gap-2">
-              <ShieldCheck className="w-4 h-4 text-tealdeep-700 shrink-0 mt-0.5" />
-              <span>
-                <strong>Campus Safety Assurance:</strong> Before students apply or work at food businesses, CampusConnect audits official government licenses, kitchen hygiene protocols, and business registrations.
-              </span>
-            </div>
-
+          <div className="space-y-4">
             {isLoading ? (
               <div className="py-8 text-center space-y-2">
-                <div className="w-6 h-6 border-2 border-marigold-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs text-ink-400">Verifying documents against central registry...</p>
+                <div className="w-8 h-8 border-3 border-tealdeep-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-xs text-ink-500">Checking verification documents...</p>
               </div>
             ) : (
-              <div className="space-y-2.5">
-                {qaData?.qa_documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className={`p-3.5 rounded-xl border transition-all ${
-                      doc.verified
-                        ? 'bg-emerald-50/50 border-emerald-200/90'
-                        : 'bg-paper-50 border-paper-border'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2.5">
+              <>
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-ink-400 block">
+                    Document Checklist & Audit Trail
+                  </span>
+
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {qaData?.qa_documents && qaData.qa_documents.length > 0 ? (
+                      qaData.qa_documents.map((doc) => (
                         <div
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                          key={doc.id}
+                          className={`p-3 rounded-xl border transition-all flex items-start justify-between gap-3 ${
                             doc.verified
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-paper-200 text-ink-400'
+                              ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
+                              : 'bg-paper-50 border-paper-border text-ink-800'
                           }`}
                         >
-                          {doc.verified ? (
-                            <CheckCircle2 className="w-4 h-4" />
-                          ) : (
-                            <Clock className="w-4 h-4" />
-                          )}
-                        </div>
-                        <div>
-                          <h5 className="font-heading font-bold text-xs sm:text-sm text-ink-900 flex items-center gap-1.5">
-                            <span>{doc.name}</span>
-                            {doc.docNumber && (
-                              <code className="text-[11px] px-1.5 py-0.2 rounded bg-white text-ink-700 border border-paper-border font-mono">
-                                #{doc.docNumber}
-                              </code>
-                            )}
-                          </h5>
-                          {doc.notes && (
-                            <p className="text-xs text-ink-600 mt-0.5 leading-relaxed">
-                              {doc.notes}
-                            </p>
-                          )}
-                          {doc.verifiedAt && (
-                            <span className="text-[10px] text-emerald-800 font-semibold block mt-1">
-                              ✓ Verified on {formatDate(doc.verifiedAt)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                          <div className="flex items-start gap-2.5">
+                            <div className="mt-0.5">
+                              {doc.verified ? (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              ) : (
+                                <Clock className="w-4 h-4 text-amber-500 shrink-0" />
+                              )}
+                            </div>
 
-                      <div className="shrink-0">
-                        {doc.verified ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-300 px-2 py-0.5 rounded-md">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Verified</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-100/70 border border-amber-300 px-2 py-0.5 rounded-md">
-                            <Clock className="w-3 h-3" />
-                            <span>Pending</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-heading font-bold text-xs sm:text-sm">
+                                  {doc.name}
+                                </span>
+                                <span
+                                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                                    doc.verified
+                                      ? 'bg-emerald-200/80 text-emerald-900'
+                                      : 'bg-amber-100 text-amber-900'
+                                  }`}
+                                >
+                                  {doc.verified ? 'Verified' : 'Pending Check'}
+                                </span>
+                              </div>
+
+                              {doc.docNumber && (
+                                <p className="text-[11px] font-mono text-ink-600 mt-0.5">
+                                  Reg/License #: <strong>{doc.docNumber}</strong>
+                                </p>
+                              )}
+
+                              {doc.notes && (
+                                <p className="text-xs text-ink-500 mt-1 italic">
+                                  "{doc.notes}"
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {doc.fileUrl && (
+                            <a
+                              href={doc.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-tealdeep-700 hover:underline shrink-0 font-medium"
+                            >
+                              View Proof
+                            </a>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-ink-500 p-4 text-center bg-paper-50 rounded-xl">
+                        No verification documents filed yet.
+                      </p>
+                    )}
                   </div>
-                ))}
-              </div>
+                </div>
+
+                {/* Audit Information */}
+                {qaData?.qa_verified_at && (
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between">
+                    <span>Last Inspection Passed:</span>
+                    <strong>{new Date(qaData.qa_verified_at).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</strong>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
 
-        {/* Tab 2: QC Reviews & Ratings */}
+        {/* Tab 2: QC Reviews Stream */}
         {activeTab === 'qc' && (
           <div className="space-y-4">
             {showReviewForm ? (
@@ -284,3 +287,5 @@ export const VendorQADetailModal: React.FC<VendorQADetailModalProps> = ({
     </Modal>
   );
 };
+
+export default VendorQADetailModal;

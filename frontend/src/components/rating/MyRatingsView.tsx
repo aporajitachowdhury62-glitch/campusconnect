@@ -11,16 +11,13 @@ import {
 } from '../../types';
 import { ratingService } from '../../services/ratingService';
 import {
-  Star,
   CheckCircle2,
   Briefcase,
   Sparkles,
-  Award,
   RefreshCw,
-  Plus,
   Clock,
-  ThumbsUp,
-  MessageSquare,
+  Award,
+  Star,
 } from 'lucide-react';
 
 interface MyRatingsViewProps {
@@ -298,3 +295,5 @@ export const MyRatingsView: React.FC<MyRatingsViewProps> = ({
     </div>
   );
 };
+
+export default MyRatingsView;

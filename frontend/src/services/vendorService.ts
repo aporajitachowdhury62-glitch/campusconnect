@@ -43,7 +43,13 @@ const saveStoredReviews = (data: Review[]) => {
 
 /**
  * Vendor QA/QC API Service
- * Note: Swap mock logic with `fetch('/api/v1/vendors/...')` once FastAPI backend is deployed.
+ * Drop-in swap for FastAPI routes:
+ * GET  /vendors/{id}/qa
+ * GET  /vendors/{id}/reviews
+ * POST /vendors/{id}/reviews
+ * POST /vendors/{id}/flags
+ * PUT  /admin/vendors/{id}/qa-status
+ * PUT  /admin/vendors/{id}/documents/{doc_id}
  */
 export const vendorService = {
   /**
@@ -116,7 +122,7 @@ export const vendorService = {
     const allReviews = getStoredReviews();
     const newReview: Review = {
       ...reviewData,
-      id: `rev-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `rev-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       created_at: new Date().toISOString(),
       flagged: false,
     };
@@ -132,7 +138,16 @@ export const vendorService = {
     const newAvg = Number((totalScore / vendorReviews.length).toFixed(1));
 
     const allQA = getStoredQA();
-    const currentQA = allQA[reviewData.vendor_id] || (await this.fetchVendorQA(reviewData.vendor_id));
+    const currentQA = allQA[reviewData.vendor_id] || (await this.fetchVendorQA(reviewData.vendor_id)) || {
+      vendor_id: reviewData.vendor_id,
+      vendor_name: 'Food Vendor',
+      category: 'Food/restaurant',
+      qa_status: 'unverified',
+      qa_documents: [],
+      qc_score: 0,
+      qc_review_count: 0,
+      qc_flags: [],
+    };
     const updatedQA: VendorQAQC = {
       ...currentQA,
       qc_score: newAvg,
@@ -146,12 +161,19 @@ export const vendorService = {
   },
 
   /**
+   * Alias for submitReview returning the review object directly
+   */
+  async addReview(
+    reviewData: Omit<Review, 'id' | 'created_at' | 'flagged'>
+  ): Promise<Review> {
+    const result = await this.submitReview(reviewData);
+    return result.review;
+  },
+
+  /**
    * Report / flag an issue for a vendor (hygiene, mismatch, safety, etc.)
    */
-  async reportIssue(
-    vendorId: string,
-    reason: string
-  ): Promise<VendorQAQC> {
+  async reportIssue(vendorId: string, reason: string): Promise<VendorQAQC> {
     await new Promise((resolve) => setTimeout(resolve, 200));
     const allQA = getStoredQA();
     const vendorQA = allQA[vendorId] || (await this.fetchVendorQA(vendorId));
@@ -164,8 +186,17 @@ export const vendorService = {
     };
 
     const updatedQA: VendorQAQC = {
-      ...vendorQA,
-      qc_flags: [newFlag, ...(vendorQA.qc_flags || [])],
+      ...(vendorQA || {
+        vendor_id: vendorId,
+        vendor_name: 'Food Vendor',
+        category: 'Food/restaurant',
+        qa_status: 'unverified',
+        qa_documents: [],
+        qc_score: 0,
+        qc_review_count: 0,
+        qc_flags: [],
+      }),
+      qc_flags: [newFlag, ...(vendorQA?.qc_flags || [])],
     };
 
     allQA[vendorId] = updatedQA;
@@ -174,22 +205,38 @@ export const vendorService = {
   },
 
   /**
-   * Admin: Update overall QA status (verified | pending | rejected)
+   * Alias for reportIssue
+   */
+  async flagReview(vendorId: string, reason: string): Promise<VendorQAQC> {
+    return this.reportIssue(vendorId, reason);
+  },
+
+  /**
+   * Update overall vendor QA verification status (e.g. from admin panel)
    */
   async updateQAStatus(
     vendorId: string,
     status: QAStatus,
-    reviewedBy: string = 'CampusConnect Admin Safety Team'
+    reviewedBy: string = 'CampusConnect Quality Inspection Team'
   ): Promise<VendorQAQC> {
     await new Promise((resolve) => setTimeout(resolve, 200));
     const allQA = getStoredQA();
     const vendorQA = allQA[vendorId] || (await this.fetchVendorQA(vendorId));
 
     const updatedQA: VendorQAQC = {
-      ...vendorQA,
+      ...(vendorQA || {
+        vendor_id: vendorId,
+        vendor_name: 'Food Vendor',
+        category: 'Food/restaurant',
+        qa_status: 'unverified',
+        qa_documents: [],
+        qc_score: 0,
+        qc_review_count: 0,
+        qc_flags: [],
+      }),
       qa_status: status,
       qa_verified_at: status === 'verified' ? new Date().toISOString() : undefined,
-      qa_reviewed_by: reviewedBy,
+      qa_reviewed_by: status === 'verified' ? reviewedBy : undefined,
     };
 
     allQA[vendorId] = updatedQA;
@@ -198,33 +245,34 @@ export const vendorService = {
   },
 
   /**
-   * Admin: Toggle individual document verification status
+   * Mark an individual document as verified or unverified
    */
   async verifyDocument(
     vendorId: string,
     docId: string,
     verified: boolean,
-    docNumber?: string
+    notes?: string
   ): Promise<VendorQAQC> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await new Promise((resolve) => setTimeout(resolve, 200));
     const allQA = getStoredQA();
     const vendorQA = allQA[vendorId] || (await this.fetchVendorQA(vendorId));
+
+    if (!vendorQA) throw new Error('Vendor not found');
 
     const updatedDocs = vendorQA.qa_documents.map((doc) => {
       if (doc.id === docId) {
         return {
           ...doc,
           verified,
-          docNumber: docNumber !== undefined ? docNumber : doc.docNumber,
           verifiedAt: verified ? new Date().toISOString() : undefined,
+          notes: notes !== undefined ? notes : doc.notes,
         };
       }
       return doc;
     });
 
-    // If all essential docs are verified, auto mark as verified
     const allVerified = updatedDocs.length > 0 && updatedDocs.every((d) => d.verified);
-    const newStatus: QAStatus = allVerified ? 'verified' : vendorQA.qa_status;
+    const newStatus: QAStatus = allVerified ? 'verified' : vendorQA.qa_status === 'verified' ? 'pending' : vendorQA.qa_status;
 
     const updatedQA: VendorQAQC = {
       ...vendorQA,
@@ -246,3 +294,5 @@ export const vendorService = {
     return getStoredQA();
   },
 };
+
+export default vendorService;

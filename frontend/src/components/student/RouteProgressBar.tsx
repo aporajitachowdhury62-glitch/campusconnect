@@ -128,3 +128,5 @@ export const RouteProgressBar: React.FC<RouteProgressBarProps> = ({
     </div>
   );
 };
+
+export default RouteProgressBar;

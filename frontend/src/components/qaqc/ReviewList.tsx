@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
-import { Star, Flag, ShieldCheck, CheckCircle2, User, Image as ImageIcon, X, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, Flag, Image as ImageIcon, X } from 'lucide-react';
 import { Review } from '../../types';
+import { vendorService } from '../../services/vendorService';
+import { INITIAL_REVIEWS } from '../../data/mockData';
 
-interface ReviewListProps {
-  reviews: Review[];
-  vendorName: string;
-  onReportIssue: (reason: string) => Promise<void>;
+export interface ReviewListProps {
+  reviews?: Review[];
+  vendorId?: string;
+  vendorName?: string;
+  onReportIssue?: (reason: string) => Promise<void>;
   isLoading?: boolean;
 }
 
 export const ReviewList: React.FC<ReviewListProps> = ({
-  reviews,
-  vendorName,
+  reviews: propReviews,
+  vendorId,
+  vendorName = 'Campus Establishment',
   onReportIssue,
-  isLoading = false,
+  isLoading: propLoading = false,
 }) => {
+  const [internalReviews, setInternalReviews] = useState<Review[]>(propReviews || []);
+  const [loading, setLoading] = useState<boolean>(propLoading);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [flagModalOpen, setFlagModalOpen] = useState<boolean>(false);
   const [flagReason, setFlagReason] = useState<string>('');
@@ -22,13 +28,32 @@ export const ReviewList: React.FC<ReviewListProps> = ({
   const [isReporting, setIsReporting] = useState<boolean>(false);
   const [reportSuccess, setReportSuccess] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (propReviews) {
+      setInternalReviews(propReviews);
+    } else if (vendorId) {
+      setLoading(true);
+      vendorService
+        .fetchVendorReviews(vendorId)
+        .then((data) => setInternalReviews(data && data.length > 0 ? data : INITIAL_REVIEWS))
+        .catch(() => setInternalReviews(INITIAL_REVIEWS))
+        .finally(() => setLoading(false));
+    } else {
+      setInternalReviews(INITIAL_REVIEWS);
+    }
+  }, [propReviews, vendorId]);
+
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!flagReason.trim()) return;
 
     try {
       setIsReporting(true);
-      await onReportIssue(`[Category: ${flagCategory.toUpperCase()}] ${flagReason.trim()}`);
+      if (onReportIssue) {
+        await onReportIssue(`[Category: ${flagCategory.toUpperCase()}] ${flagReason.trim()}`);
+      } else if (vendorId) {
+        await vendorService.flagReview(vendorId, flagReason.trim());
+      }
       setReportSuccess(true);
       setTimeout(() => {
         setReportSuccess(false);
@@ -55,7 +80,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="py-8 text-center space-y-2">
         <div className="w-8 h-8 border-3 border-marigold-500 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -64,7 +89,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({
     );
   }
 
-  if (reviews.length === 0) {
+  if (internalReviews.length === 0) {
     return (
       <div className="py-8 px-4 text-center bg-paper-100/60 rounded-2xl border border-paper-border space-y-2">
         <div className="w-10 h-10 rounded-full bg-paper-200 text-ink-400 flex items-center justify-center mx-auto">
@@ -85,7 +110,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({
       {/* Top Header with Report button */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-ink-700 uppercase tracking-wider">
-          Verified Student Reviews ({reviews.length})
+          Verified Student Reviews ({internalReviews.length})
         </span>
 
         <button
@@ -100,7 +125,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({
 
       {/* Reviews Stream */}
       <div className="space-y-3">
-        {reviews.map((rev) => (
+        {internalReviews.map((rev) => (
           <div
             key={rev.id}
             className="p-4 rounded-xl bg-white border border-paper-border shadow-2xs space-y-2.5"
@@ -201,72 +226,69 @@ export const ReviewList: React.FC<ReviewListProps> = ({
             </button>
             <img
               src={selectedPhoto}
-              alt="Full Preview"
-              className="w-full h-auto max-h-[75vh] object-contain rounded-xl"
+              alt="Full preview"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-xl"
             />
           </div>
         </div>
       )}
 
-      {/* Report Issue Modal */}
+      {/* Flag Issue Modal */}
       {flagModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 border border-paper-border shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/40 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl p-5 max-w-md w-full border border-paper-border shadow-warm-lg space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-paper-border">
-              <div className="flex items-center gap-2 text-rose-700 font-heading font-bold text-base">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
-                <span>Report Quality or Hygiene Issue</span>
-              </div>
+              <h4 className="font-heading font-bold text-sm text-ink-900 flex items-center gap-1.5 text-rose-700">
+                <Flag className="w-4 h-4" />
+                <span>Report Quality or Hygiene Concern</span>
+              </h4>
               <button
+                type="button"
                 onClick={() => setFlagModalOpen(false)}
-                className="p-1 rounded-lg text-ink-400 hover:text-ink-700"
+                className="text-ink-400 hover:text-ink-700"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
             {reportSuccess ? (
-              <div className="p-4 bg-emerald-50 text-emerald-800 rounded-xl text-center text-xs font-semibold">
-                ✓ Report logged successfully! Our campus admin team will audit this vendor.
+              <div className="py-6 text-center text-xs text-emerald-800 font-semibold bg-emerald-50 rounded-xl">
+                ✓ Report logged. Our Quality Inspection Team will audit this venue.
               </div>
             ) : (
-              <form onSubmit={handleReportSubmit} className="space-y-3">
-                <p className="text-xs text-ink-600">
-                  Help maintain safety standards for all students working at <strong>{vendorName}</strong>.
-                </p>
-
+              <form onSubmit={handleReportSubmit} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-xs font-semibold text-ink-700 mb-1">
-                    Issue Category *
+                  <label className="block font-semibold text-ink-800 mb-1">
+                    Issue Category
                   </label>
                   <select
                     value={flagCategory}
                     onChange={(e) => setFlagCategory(e.target.value)}
-                    className="w-full paper-input text-xs"
+                    className="w-full p-2 rounded-lg border border-paper-border bg-paper-50"
                   >
-                    <option value="hygiene">Kitchen Hygiene & Sanitization Issue</option>
-                    <option value="food_safety">Food Quality / Storage Mismatch</option>
-                    <option value="safety">Workplace Safety or Harassment</option>
-                    <option value="wage">Pay / Stipend Mismatch with Listing</option>
-                    <option value="fake">Fake FSSAI or Misleading Listing</option>
+                    <option value="hygiene">Kitchen / Workplace Hygiene</option>
+                    <option value="licensing">Missing FSSAI / Trade License</option>
+                    <option value="safety">Unsafe Working Conditions</option>
+                    <option value="payment">Unpaid Shift / Stipend Issue</option>
+                    <option value="misconduct">Owner / Staff Misconduct</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-ink-700 mb-1">
-                    Describe the issue in detail *
+                  <label className="block font-semibold text-ink-800 mb-1">
+                    Detailed Explanation
                   </label>
                   <textarea
                     rows={3}
+                    required
                     value={flagReason}
                     onChange={(e) => setFlagReason(e.target.value)}
-                    placeholder="Provide specific details so our safety team can take action..."
-                    className="w-full paper-input text-xs"
-                    required
+                    placeholder="Describe what you observed regarding cleanliness or compliance..."
+                    className="w-full p-2 rounded-lg border border-paper-border bg-paper-50 resize-none"
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="pt-2 flex justify-end gap-2 border-t border-paper-border">
                   <button
                     type="button"
                     onClick={() => setFlagModalOpen(false)}
@@ -290,3 +312,5 @@ export const ReviewList: React.FC<ReviewListProps> = ({
     </div>
   );
 };
+
+export default ReviewList;

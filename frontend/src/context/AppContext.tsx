@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Student, Shopkeeper, ConnectionRequest, VendorQAQC, UserRoleType } from '../types';
+import { Student, Shopkeeper, ConnectionRequest, VendorQAQC } from '../types';
 import { INITIAL_STUDENTS, INITIAL_SHOPKEEPERS } from '../data/mockData';
 import { connectionService } from '../services/connectionService';
 import { vendorService } from '../services/vendorService';
@@ -190,3 +190,5 @@ export const useApp = (): AppContextType => {
   }
   return context;
 };
+
+export default AppProvider;

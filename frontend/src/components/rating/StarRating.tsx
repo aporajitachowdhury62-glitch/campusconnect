@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Star, Award } from 'lucide-react';
 
-interface StarRatingProps {
-  score?: number;
+export interface StarRatingProps {
+  rating?: number;
+  score?: number; // Backwards compatible with score prop
+  totalReviews?: number;
+  reviewCount?: number; // Backwards compatible with reviewCount prop
   maxStars?: number;
-  reviewCount?: number;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   isInteractive?: boolean;
   onChange?: (newScore: number) => void;
@@ -17,9 +19,11 @@ interface StarRatingProps {
 }
 
 export const StarRating: React.FC<StarRatingProps> = ({
-  score = 0,
-  maxStars = 5,
+  rating,
+  score,
+  totalReviews,
   reviewCount,
+  maxStars = 5,
   size = 'sm',
   isInteractive = false,
   onChange,
@@ -32,8 +36,12 @@ export const StarRating: React.FC<StarRatingProps> = ({
 }) => {
   const [hoverScore, setHoverScore] = useState<number>(0);
 
-  const activeScore = isInteractive ? (hoverScore || score) : score;
-  const isTopRated = score >= topRatedThreshold && (reviewCount === undefined || reviewCount >= 5);
+  // Normalize rating & count from either prop format
+  const effectiveScore = rating !== undefined ? rating : (score !== undefined ? score : 0);
+  const effectiveCount = totalReviews !== undefined ? totalReviews : reviewCount;
+
+  const activeScore = isInteractive ? (hoverScore || effectiveScore) : effectiveScore;
+  const isTopRated = effectiveScore >= topRatedThreshold && (effectiveCount === undefined || effectiveCount >= 5);
 
   const starSizes = {
     xs: 'w-3 h-3',
@@ -100,8 +108,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
   }
 
   // Read-only Mode
-  const hasRatings = (reviewCount !== undefined ? reviewCount > 0 : true) && score > 0;
-  const formattedScore = hasRatings ? score.toFixed(1) : 'New';
+  const hasRatings = (effectiveCount !== undefined ? effectiveCount > 0 : true) && effectiveScore > 0;
+  const formattedScore = hasRatings ? effectiveScore.toFixed(1) : 'New';
 
   return (
     <div
@@ -111,8 +119,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
       } ${className}`}
       title={
         hasRatings
-          ? `${formattedScore} out of 5 stars (${reviewCount || 0} verified engagement ratings)`
-          : 'No engagement ratings yet'
+          ? `${formattedScore} out of 5 stars (${effectiveCount || 0} verified reviews)`
+          : 'No reviews yet'
       }
     >
       <div className="flex items-center gap-1 bg-amber-50/90 text-amber-900 border border-amber-200/90 px-2 py-0.5 rounded-md shadow-2xs">
@@ -124,9 +132,9 @@ export const StarRating: React.FC<StarRatingProps> = ({
         )}
       </div>
 
-      {showCount && reviewCount !== undefined && (
+      {showCount && effectiveCount !== undefined && (
         <span className="text-xs text-ink-500 font-medium">
-          ({reviewCount})
+          ({effectiveCount})
         </span>
       )}
 
@@ -139,3 +147,5 @@ export const StarRating: React.FC<StarRatingProps> = ({
     </div>
   );
 };
+
+export default StarRating;

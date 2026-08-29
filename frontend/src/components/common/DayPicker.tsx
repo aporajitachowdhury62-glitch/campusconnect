@@ -133,3 +133,5 @@ export const DayPicker: React.FC<DayPickerProps> = ({
     </div>
   );
 };
+
+export default DayPicker;

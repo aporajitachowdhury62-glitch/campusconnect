@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { SearchX, RotateCcw, PlusCircle, Store, GraduationCap } from 'lucide-react';
+import { SearchX, RotateCcw, Store, GraduationCap } from 'lucide-react';
 import { UserRole } from '../../types';
 
-interface EmptyStateProps {
+export interface EmptyStateProps {
   role: UserRole;
   onResetFilters: () => void;
 }
@@ -58,3 +58,5 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ role, onResetFilters }) 
     </div>
   );
 };
+
+export default EmptyState;

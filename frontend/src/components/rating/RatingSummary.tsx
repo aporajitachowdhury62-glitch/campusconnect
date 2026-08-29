@@ -1,12 +1,12 @@
 import React from 'react';
 import { StarRating } from './StarRating';
-import { RatingSummaryData } from '../../types';
-import { Award, Star, ThumbsUp, Tag } from 'lucide-react';
+import { RatingSummaryData, UserRoleType } from '../../types';
+import { Award, Star, Tag } from 'lucide-react';
 
-interface RatingSummaryProps {
+export interface RatingSummaryProps {
   summary: RatingSummaryData;
   userName?: string;
-  role?: 'student' | 'shopkeeper';
+  role?: UserRoleType | string;
   className?: string;
 }
 
@@ -16,8 +16,9 @@ export const RatingSummary: React.FC<RatingSummaryProps> = ({
   role,
   className = '',
 }) => {
-  const { avg_rating, rating_count, rating_breakdown, top_tags } = summary;
+  const { avg_rating = 0, rating_count = 0, rating_breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }, top_tags = [] } = summary || {};
   const isTopRated = avg_rating >= 4.5 && rating_count >= 5;
+  const isStudent = (role || '').toLowerCase().includes('student');
 
   return (
     <div
@@ -32,8 +33,8 @@ export const RatingSummary: React.FC<RatingSummaryProps> = ({
             </span>
             <div className="flex justify-center mt-1.5">
               <StarRating
-                score={avg_rating}
-                reviewCount={rating_count}
+                rating={avg_rating}
+                totalReviews={rating_count}
                 size="sm"
                 showCount={false}
                 showScoreText={false}
@@ -52,7 +53,7 @@ export const RatingSummary: React.FC<RatingSummaryProps> = ({
               {isTopRated && (
                 <span className="inline-flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-amber-100 to-amber-200 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-md shadow-2xs">
                   <Award className="w-3.5 h-3.5 text-amber-700" />
-                  <span>{role === 'student' ? 'Top Talent (4.5+ ★)' : 'Top Rated Employer (4.5+ ★)'}</span>
+                  <span>{isStudent ? 'Top Talent (4.5+ ★)' : 'Top Rated Employer (4.5+ ★)'}</span>
                 </span>
               )}
             </div>
@@ -100,7 +101,7 @@ export const RatingSummary: React.FC<RatingSummaryProps> = ({
 
         {/* Top Highlight Tags */}
         <div className="bg-paper-50 p-4 rounded-xl border border-paper-border space-y-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-ink-400 block flex items-center gap-1.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-ink-400 flex items-center gap-1.5">
             <Tag className="w-3 h-3 text-marigold-600" />
             <span>Top Endorsed Qualities</span>
           </span>
@@ -129,3 +130,5 @@ export const RatingSummary: React.FC<RatingSummaryProps> = ({
     </div>
   );
 };
+
+export default RatingSummary;

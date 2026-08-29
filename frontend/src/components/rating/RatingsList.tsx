@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { Rating } from '../../types';
 import { StarRating } from './StarRating';
+import { RoleBadge } from '../common/RoleBadge';
 import {
-  MessageSquare,
   GraduationCap,
   Store,
-  Calendar,
-  Filter,
   Star,
-  CheckCircle2,
 } from 'lucide-react';
 
-interface RatingsListProps {
-  ratings: Rating[];
+export interface RatingsListProps {
+  ratings?: Rating[];
   isLoading?: boolean;
   emptyTitle?: string;
   emptySubtitle?: string;
@@ -20,7 +17,7 @@ interface RatingsListProps {
 }
 
 export const RatingsList: React.FC<RatingsListProps> = ({
-  ratings,
+  ratings = [],
   isLoading = false,
   emptyTitle = 'No Ratings Yet',
   emptySubtitle = 'Verified reviews will appear here once work engagements are completed and rated.',
@@ -115,7 +112,7 @@ export const RatingsList: React.FC<RatingsListProps> = ({
       ) : (
         <div className="space-y-3">
           {filteredRatings.map((rating) => {
-            const isRaterStudent = rating.rater_role === 'student';
+            const isRaterStudent = (rating.rater_role || '').toLowerCase().includes('student');
 
             return (
               <div
@@ -140,20 +137,12 @@ export const RatingsList: React.FC<RatingsListProps> = ({
                     </div>
 
                     <div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-heading font-bold text-xs sm:text-sm text-ink-900">
                           {rating.rater_name}
                         </span>
                         {showRaterRole && (
-                          <span
-                            className={`text-[10px] font-semibold px-1.5 py-0.2 rounded border ${
-                              isRaterStudent
-                                ? 'bg-marigold-50 text-marigold-800 border-marigold-200'
-                                : 'bg-tealdeep-50 text-tealdeep-800 border-tealdeep-200'
-                            }`}
-                          >
-                            {isRaterStudent ? 'Student' : 'Shopkeeper'}
-                          </span>
+                          <RoleBadge role={rating.rater_role} size="xs" />
                         )}
                       </div>
 
@@ -163,9 +152,9 @@ export const RatingsList: React.FC<RatingsListProps> = ({
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <StarRating
-                      score={rating.score}
+                      rating={rating.score}
                       size="sm"
                       showCount={false}
                       showScoreText={true}
@@ -204,3 +193,5 @@ export const RatingsList: React.FC<RatingsListProps> = ({
     </div>
   );
 };
+
+export default RatingsList;

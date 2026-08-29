@@ -691,3 +691,5 @@ export const StudentForm: React.FC = () => {
     </div>
   );
 };
+
+export default StudentForm;

@@ -4,10 +4,7 @@ import {
   UserRole,
   StudentFilters,
   ShopkeeperFilters,
-  Student,
-  Shopkeeper,
   Engagement,
-  Rating,
 } from '../types';
 import { ListingCard } from '../components/shopkeeper/ListingCard';
 import { StudentCard } from '../components/student/StudentCard';
@@ -24,14 +21,11 @@ import {
   Store,
   Sparkles,
   MapPin,
-  TrendingUp,
-  Clock,
-  Layers,
   Inbox,
   ShieldCheck,
+  UserCheck,
   Compass,
   CheckCheck,
-  UserCheck,
   Star,
   Award,
 } from 'lucide-react';
@@ -590,3 +584,5 @@ export const DashboardPage: React.FC = () => {
     </main>
   );
 };
+
+export default DashboardPage;

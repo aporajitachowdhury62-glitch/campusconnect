@@ -1,4 +1,10 @@
-export type UserRoleType = 'student' | 'shopkeeper';
+export type UserRoleType =
+  | 'Student'
+  | 'Shopkeeper'
+  | 'QAC'
+  | 'student'
+  | 'shopkeeper'
+  | 'qac';
 
 export interface Rating {
   id: string;

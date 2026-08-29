@@ -310,3 +310,5 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
     </form>
   );
 };
+
+export default ReviewForm;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Star, MessageSquare } from 'lucide-react';
+import { Star } from 'lucide-react';
 
-interface VendorQCRatingProps {
+export interface VendorQCRatingProps {
   score?: number;
   reviewCount?: number;
   size?: 'sm' | 'md' | 'lg';
@@ -65,3 +65,5 @@ export const VendorQCRating: React.FC<VendorQCRatingProps> = ({
     </div>
   );
 };
+
+export default VendorQCRating;

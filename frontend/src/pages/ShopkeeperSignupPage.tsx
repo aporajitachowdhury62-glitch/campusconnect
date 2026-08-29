@@ -10,3 +10,5 @@ export const ShopkeeperSignupPage: React.FC = () => {
     </main>
   );
 };
+
+export default ShopkeeperSignupPage;

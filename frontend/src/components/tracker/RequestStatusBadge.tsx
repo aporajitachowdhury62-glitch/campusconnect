@@ -89,3 +89,5 @@ export const RequestStatusBadge: React.FC<RequestStatusBadgeProps> = ({
     </span>
   );
 };
+
+export default RequestStatusBadge;

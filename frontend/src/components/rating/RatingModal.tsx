@@ -5,15 +5,11 @@ import { Engagement, Rating, UserRoleType } from '../../types';
 import { ratingService } from '../../services/ratingService';
 import {
   Sparkles,
-  CheckCircle2,
-  X,
-  User,
   Store,
   GraduationCap,
-  MessageSquare,
 } from 'lucide-react';
 
-interface RatingModalProps {
+export interface RatingModalProps {
   isOpen: boolean;
   onClose: () => void;
   engagement: Engagement;
@@ -38,10 +34,10 @@ const SHOPKEEPER_RATING_TAGS = [
   'Respectful & Friendly',
   'Clear Instructions',
   'Safe Work Environment',
-  'Accurate Hours',
   'Free Snacks / Meals',
-  'Flexible Shifts',
-  'Great Communication',
+  'Flexible Schedule',
+  'Accurate Hours',
+  'Great Mentorship',
 ];
 
 export const RatingModal: React.FC<RatingModalProps> = ({
@@ -52,63 +48,45 @@ export const RatingModal: React.FC<RatingModalProps> = ({
   currentUserRole,
   onRatingSubmitted,
 }) => {
+  const isCurrentStudent = (currentUserRole || '').toLowerCase().includes('student');
+
+  // If active user is student, they rate the shopkeeper. If shopkeeper, they rate the student.
+  const rateeName = isCurrentStudent ? engagement.shopkeeper_name : engagement.student_name;
+  const rateeRole: UserRoleType = isCurrentStudent ? 'shopkeeper' : 'student';
+  const rateeId = isCurrentStudent ? engagement.shopkeeper_id : engagement.student_id;
+  const availableTags = isCurrentStudent ? SHOPKEEPER_RATING_TAGS : STUDENT_RATING_TAGS;
+
   const [score, setScore] = useState<number>(5);
   const [comment, setComment] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-
-  if (!isOpen) return null;
-
-  const isStudentRatingShopkeeper = currentUserRole === 'student';
-  const targetName = isStudentRatingShopkeeper
-    ? engagement.shopkeeper_name
-    : engagement.student_name;
-  const targetRoleName = isStudentRatingShopkeeper
-    ? `Shopkeeper / ${engagement.shop_name}`
-    : `Student (${engagement.student_college || 'Campus Talent'})`;
-
-  const availableTags = isStudentRatingShopkeeper
-    ? SHOPKEEPER_RATING_TAGS
-    : STUDENT_RATING_TAGS;
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const toggleTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
+      setSelectedTags((prev) => prev.filter((t) => t !== tag));
     } else {
-      setSelectedTags([...selectedTags, tag]);
+      if (selectedTags.length >= 4) return;
+      setSelectedTags((prev) => [...prev, tag]);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (score < 1 || score > 5) {
-      setError('Please select a star rating from 1 to 5.');
+      setErrorMsg('Please select a star rating from 1 to 5');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      setError(null);
+      setErrorMsg(null);
 
-      const raterName = isStudentRatingShopkeeper
-        ? engagement.student_name
-        : engagement.shopkeeper_name;
-      const rateeId = isStudentRatingShopkeeper
-        ? engagement.shopkeeper_id
-        : engagement.student_id;
-      const rateeName = isStudentRatingShopkeeper
-        ? engagement.shopkeeper_name
-        : engagement.student_name;
-      const rateeRole: UserRoleType = isStudentRatingShopkeeper
-        ? 'shopkeeper'
-        : 'student';
-
-      const result = await ratingService.submitRating(engagement.id, {
+      const ratingPayload = {
         engagement_id: engagement.id,
         job_title: engagement.job_title,
         rater_id: currentUserId,
-        rater_name: raterName,
+        rater_name: isCurrentStudent ? engagement.student_name : engagement.shopkeeper_name,
         rater_role: currentUserRole,
         ratee_id: rateeId,
         ratee_name: rateeName,
@@ -116,12 +94,14 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         score,
         comment: comment.trim() || undefined,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
-      });
+      };
 
+      const result = await ratingService.submitRating(engagement.id, ratingPayload);
       onRatingSubmitted(result.rating, result.engagement);
       onClose();
-    } catch (err: any) {
-      setError(err?.message || 'Failed to submit rating. Please try again.');
+    } catch (e) {
+      console.error(e);
+      setErrorMsg('Failed to submit rating. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -131,61 +111,73 @@ export const RatingModal: React.FC<RatingModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Rate Work Engagement"
-      subtitle={`Completed Job: ${engagement.job_title} • ${engagement.shop_name}`}
+      title={`Rate your experience with ${rateeName}`}
+      subtitle={`Completed Engagement: ${engagement.job_title} • Verified 2-Sided Review`}
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-xs sm:text-sm">
-        {/* Ratee Info Banner */}
-        <div className="p-3.5 bg-paper-50 rounded-xl border border-paper-border flex items-center gap-3">
-          <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
-              isStudentRatingShopkeeper
-                ? 'bg-tealdeep-50 text-tealdeep-800 border border-tealdeep-200'
-                : 'bg-marigold-50 text-marigold-900 border border-marigold-200'
-            }`}
-          >
-            {isStudentRatingShopkeeper ? (
-              <Store className="w-5 h-5" />
-            ) : (
-              <GraduationCap className="w-5 h-5" />
-            )}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Engagement Summary Pill */}
+        <div className="p-3.5 rounded-xl bg-paper-100 border border-paper-border flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                isCurrentStudent
+                  ? 'bg-tealdeep-50 text-tealdeep-800 border border-tealdeep-200'
+                  : 'bg-marigold-50 text-marigold-900 border border-marigold-200'
+              }`}
+            >
+              {isCurrentStudent ? (
+                <Store className="w-3.5 h-3.5" />
+              ) : (
+                <GraduationCap className="w-3.5 h-3.5" />
+              )}
+            </div>
+            <div>
+              <span className="font-heading font-bold text-ink-900 block">
+                {engagement.job_title}
+              </span>
+              <span className="text-ink-500 text-[11px]">
+                {engagement.shop_name} • {engagement.category}
+              </span>
+            </div>
           </div>
 
-          <div>
-            <span className="text-[10px] uppercase font-bold text-ink-400 block tracking-wider">
-              {isStudentRatingShopkeeper ? 'Rating Employer:' : 'Rating Student Worker:'}
-            </span>
-            <h4 className="font-heading font-bold text-sm sm:text-base text-ink-900">
-              {targetName}
-            </h4>
-            <p className="text-xs text-ink-500">{targetRoleName}</p>
-          </div>
+          <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold text-[10px] uppercase tracking-wider">
+            Shift Completed
+          </span>
         </div>
 
-        {error && (
-          <div className="p-3 bg-rose-50 text-rose-800 rounded-xl border border-rose-200 text-xs font-semibold">
-            {error}
+        {errorMsg && (
+          <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium">
+            {errorMsg}
           </div>
         )}
 
-        {/* Interactive Star Picker */}
-        <div>
-          <label className="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-2">
-            Overall Experience Rating (1 to 5 Stars) *
+        {/* Star Rating Interactive Selector */}
+        <div className="space-y-1.5 text-center sm:text-left">
+          <label className="block text-xs font-bold uppercase tracking-wider text-ink-700">
+            Overall Rating (1 to 5 Stars)*
           </label>
-          <StarRating
-            score={score}
-            isInteractive={true}
-            size="lg"
-            onChange={(newScore) => setScore(newScore)}
-          />
+          <div className="flex justify-center sm:justify-start">
+            <StarRating
+              rating={score}
+              isInteractive={true}
+              onChange={(newVal) => setScore(newVal)}
+              size="lg"
+            />
+          </div>
         </div>
 
-        {/* Quick Tag Badges */}
-        <div>
-          <label className="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-1.5">
-            Key Highlights & Tags (Click to select)
-          </label>
+        {/* Endorsement Tags */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <label className="font-bold uppercase tracking-wider text-ink-700">
+              Endorse Top Strengths (Pick up to 4)
+            </label>
+            <span className="text-[11px] text-ink-400">
+              {selectedTags.length}/4 selected
+            </span>
+          </div>
+
           <div className="flex flex-wrap gap-1.5">
             {availableTags.map((tag) => {
               const isSelected = selectedTags.includes(tag);
@@ -194,34 +186,31 @@ export const RatingModal: React.FC<RatingModalProps> = ({
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                  className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-all ${
                     isSelected
-                      ? 'bg-marigold-100 text-marigold-900 border-marigold-400 font-semibold shadow-2xs'
-                      : 'bg-white text-ink-600 border-paper-border hover:bg-paper-100'
+                      ? 'bg-marigold-500 text-white border-marigold-600 shadow-2xs scale-102 font-semibold'
+                      : 'bg-paper-50 text-ink-700 border-paper-border hover:bg-paper-200'
                   }`}
                 >
-                  {isSelected ? `✓ ${tag}` : `+ ${tag}`}
+                  <span>{isSelected ? '✓ ' : '+ '}</span>
+                  <span>{tag}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Comment Box */}
-        <div>
-          <label className="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-1">
-            Written Review / Feedback (Optional)
+        {/* Written Feedback */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-ink-700">
+            Share Details & Written Feedback (Optional)
           </label>
           <textarea
             rows={3}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder={
-              isStudentRatingShopkeeper
-                ? 'How was the shift environment, payment promptness, and communication?'
-                : 'How was the student punctuality, work quality, and attitude?'
-            }
-            className="w-full paper-input text-xs leading-relaxed"
+            placeholder={`How was working with ${rateeName}? Mention punctuality, payment clarity, or work atmosphere...`}
+            className="input-field text-xs resize-none"
           />
         </div>
 
@@ -249,3 +238,5 @@ export const RatingModal: React.FC<RatingModalProps> = ({
     </Modal>
   );
 };
+
+export default RatingModal;
