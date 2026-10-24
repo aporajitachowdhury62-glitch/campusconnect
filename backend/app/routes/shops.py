@@ -31,3 +31,15 @@ def get_shop(
             detail=f"Shop with ID '{shop_id}' not found",
         )
     return shop
+
+
+@router.post("", response_model=ShopRead, status_code=status.HTTP_201_CREATED)
+def create_shop(
+    shop_data: Shop,
+    session: Session = Depends(get_session),
+) -> Shop:
+    """Register a new shop and merchant on CampusConnect."""
+    session.add(shop_data)
+    session.commit()
+    session.refresh(shop_data)
+    return shop_data

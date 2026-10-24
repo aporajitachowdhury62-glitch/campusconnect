@@ -4,6 +4,7 @@ import { INITIAL_STUDENTS, INITIAL_SHOPKEEPERS } from '../data/mockData';
 import { connectionService } from '../services/connectionService';
 import { vendorService } from '../services/vendorService';
 import { ratingService } from '../services/ratingService';
+import { api } from '../services/api';
 
 interface AppContextType {
   students: Student[];
@@ -46,6 +47,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [employerPendingRatingsCount, setEmployerPendingRatingsCount] = useState<number>(0);
 
   const clearRecentAdded = () => setRecentAddedId(null);
+
+  // Fetch live students and shops from the backend (when deployed or running locally)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveBackendData = async () => {
+      try {
+        const [liveStudents, liveShops] = await Promise.all([
+          api.getStudents(),
+          api.getShops(),
+        ]);
+        if (isMounted) {
+          if (liveStudents && liveStudents.length > 0) {
+            setStudents(liveStudents);
+          }
+          if (liveShops && liveShops.length > 0) {
+            setShopkeepers(liveShops);
+          }
+        }
+      } catch (e) {
+        console.warn('Backend not reachable, running with mock datasets:', e);
+      }
+    };
+    fetchLiveBackendData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const refreshCounters = async () => {
     try {
@@ -105,6 +133,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setStudents((prev) => [newStudent, ...prev]);
     setRecentAddedId(newStudent.id);
+
+    // Sync with backend if connected
+    api.createStudent(newStudent).catch(() => {});
+
     return newStudent;
   };
 
@@ -127,6 +159,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setShopkeepers((prev) => [newShopkeeper, ...prev]);
     setRecentAddedId(newShopkeeper.id);
+
+    // Sync with backend if connected
+    api.createShop(newShopkeeper).catch(() => {});
+
     return newShopkeeper;
   };
 

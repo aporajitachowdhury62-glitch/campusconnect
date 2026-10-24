@@ -31,3 +31,15 @@ def get_student(
             detail=f"Student with ID '{student_id}' not found",
         )
     return student
+
+
+@router.post("", response_model=Student, status_code=status.HTTP_201_CREATED)
+def create_student(
+    student_data: Student,
+    session: Session = Depends(get_session),
+) -> Student:
+    """Register a new student on CampusConnect."""
+    session.add(student_data)
+    session.commit()
+    session.refresh(student_data)
+    return student_data

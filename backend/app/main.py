@@ -34,6 +34,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize database tables
     create_db_and_tables()
 
+    # Automatically seed initial talent, shops, and jobs if tables are empty
+    try:
+        from seed import seed_database
+        seed_database()
+    except Exception as e:
+        print(f"Database auto-seed check skipped or already populated: {e}")
+
     # Wire in the FastMCP Streamable HTTP session manager lifespan
     async with mcp_server.session_manager.run():
         yield
@@ -46,10 +53,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Enable CORS for frontend origins
+# Enable CORS for frontend origins (including Vercel preview/production deployments)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS if CORS_ORIGINS else ["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
